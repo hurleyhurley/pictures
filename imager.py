@@ -54,6 +54,9 @@ class Window:
               command=lambda x=0:process(x))
         but_go.grid(row=0, column=2)
 
+        output_label = tk.Label(master)
+        output_label.grid()
+
         def process(x):
             l_val = []
             for i in range(9):
@@ -61,15 +64,15 @@ class Window:
                     l_val.append(float(l_values[i].get()))
                 except:
                     l_val.append(float(0))
-            
+
             a_val=[]
             for i in range(3):
                 try:
                     a_val.append(int(a_values[i].get()))
                 except:
                     a_val.append(0)
-            
-            
+
+
             imob = Image.open('picture.jpg')
             w,h = imob.size
             newim = Image.new(imob.mode, imob.size)
@@ -77,8 +80,10 @@ class Window:
 
 
                     #THIS IS WHAT I WANT TO DISPLAY IN GUI!!!!!
-                    #AS IT RUNS SO IT COUNTS DOWN 
+                    #AS IT RUNS SO IT COUNTS DOWN
                     print(w - _[0]) #how long this going to take?
+                    output_label.config(text="working on {}".format(w - _[0]))
+                    output_label.update() # push the change to the screen
 
 
                     p = imob.getpixel(_)
@@ -94,7 +99,7 @@ class Window:
                     newim.putpixel(_, pnew) #alternative
             newim.save('here.jpg')
             newim.close()
-        
+
         def count_label(newpic):
 
             new = Image.open('here.jpg').save('here.gif', 'gif')
@@ -103,7 +108,7 @@ class Window:
             newpic.image = newimg
 
             newpic.after(1000, count_label, newpic)
-            
+
 
         newpic = tk.Label(master)
         newpic.grid(row=0, column=1)
