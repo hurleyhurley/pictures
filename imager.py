@@ -1,120 +1,110 @@
 #!/usr/bin/python3
 
 import tkinter as tk
-from PIL import Image
+from PIL import Image, ImageTk
 import os
 
+def all_jpg_to_gif():
+    for filename in os.listdir('.'):
+        basename, ext = os.path.splitext(filename)
+        if ext.lower() in ('.jpg', '.jpeg'):
+            Image.open(filename).save(basename+'.gif')
 
-class Window:
+class Matrix(tk.Frame):
+    def __init__(self, master=None, **kwargs):
+        tk.Frame.__init__(self, master, **kwargs)
 
+        self.l_values = []
+        for i in range(9):
+            ent = tk.Entry(self, width=3)
+            row, column = divmod(i, 3)
+            ent.grid(row=row, column=column)
+            self.l_values.append(ent)
 
-    def __init__(self, master):
+        plus = tk.Label(self, text='+')
+        plus.grid(row = 1, column = 3)
+
+        self.affine = []
+        for i in range(3):
+            ent = tk.Entry(self, width=3)
+            ent.grid(row=i, column=4)
+            self.affine.append(ent)
+
+    def convert_values(self, data_list):
+        '''converts a list of Entry widgets to floats'''
+        data = []
+        for ent in data_list:
+            try:
+                data.append(float(ent.get()))
+            except ValueError:
+                data.append(0)
+        return data
+
+    def get_l_values(self):
+        return self.convert_values(self.l_values)
+
+    def get_affine(self):
+        return self.convert_values(self.affine)
+
+class Window(tk.Frame):
+    def __init__(self, master=None, **kwargs):
+        tk.Frame.__init__(self, master, **kwargs)
 
         master.title('Picture thingy')
 
-        #make gif versions of all the jpg files in directory
-        list(map\
-        (lambda _: Image.open(_).save(_.replace('jpg', 'gif'), 'gif'),\
-        [_ for _ in os.listdir('.') if 'jpg' in _]))
+        # make gif versions of all the jpg files in directory
+        # all_jpg_to_gif() # uncomment this line if you really want this functionality
 
-        oldimg = tk.PhotoImage(file='picture.gif')
-        oldpic = tk.Label(master, image=oldimg)
+        self.oldimg = Image.open('picture.jpg')
+        oldimg = ImageTk.PhotoImage(self.oldimg)
+        oldpic = tk.Label(self, image=oldimg)
         oldpic.oldimg = oldimg
-        oldpic.grid(row=0, column=0)
+        oldpic.grid(row=0, column=0, rowspan=3)
 
-        #make list of tkinter variables for user input
-        l_values = []
-        for i in range(9):
-            l_values.append(tk.StringVar())
+        self.newpic = tk.Label(self)
+        self.newpic.grid(row=0, column=1, rowspan=3)
+        self.update_output(Image.open('here.jpg'))
 
-        #set up matrix in GUI for user input
-        linear = []
-        for i in range(9):
-            linear.append(tk.Entry(master, width=3))
-            linear[i].configure(textvariable = l_values[i])
-            linear[i].grid(row=(i//3 + 2), column=i%3 + 2)
+        self.mat = Matrix(self)
+        self.mat.grid(row=0, column=3)
 
+        but_go = tk.Button(self, text="go", command=self.process)
+        but_go.grid(row=1, column=3)
 
-        plus = tk.Label(text='+')
-        plus.grid(row = 3, column = 5)
+        self.output_label = tk.Label(self, text="Press go")
+        self.output_label.grid(row=2, column=3)
 
-        a_values = []
-        for i in range(3):
-            a_values.append(tk.StringVar())
+    def process(self):
+        l_val = self.mat.get_l_values()
+        a_val = self.mat.get_affine()
 
-        affine = []
-        for i in range(3):
-            affine.append(tk.Entry(master, width=3))
-            affine[i].configure(textvariable = a_values[i])
-            affine[i].grid(row=i + 2, column=6)
+        w,h = self.oldimg.size
+        newim = Image.new(self.oldimg.mode, self.oldimg.size)
+        for x in range(w):
+            self.output_label.config(text="working on {}".format(w - x))
+            self.output_label.update() # push the change to the screen
+            for y in range(h):
+                p = self.oldimg.getpixel((x,y))
 
+                pnew=(l_val[0]*p[0]+l_val[1]*p[1]+l_val[2]*p[2]+a_val[0],
+                      l_val[3]*p[0]+l_val[4]*p[1]+l_val[5]*p[2]+a_val[1],
+                      l_val[6]*p[0]+l_val[7]*p[1]+l_val[8]*p[2]+a_val[2])
 
+                pnew=tuple(map(int, pnew))
+                newim.putpixel((x,y), pnew) #alternative
+        newim.save('here.jpg')
+        self.update_output(newim)
 
-        but_go = tk.Button(master, text="go", \
-              command=lambda x=0:process(x))
-        but_go.grid(row=0, column=2)
+    def update_output(self, new_data):
+        newimg = ImageTk.PhotoImage(new_data)
+        self.newpic.config(image=newimg)
+        self.newpic.image = newimg
 
-        output_label = tk.Label(master)
-        output_label.grid()
+def main():
+    root = tk.Tk()
+    win = Window(root)
+    win.pack()
+    root.mainloop()
 
-        def process(x):
-            l_val = []
-            for i in range(9):
-                try:
-                    l_val.append(float(l_values[i].get()))
-                except:
-                    l_val.append(float(0))
-
-            a_val=[]
-            for i in range(3):
-                try:
-                    a_val.append(int(a_values[i].get()))
-                except:
-                    a_val.append(0)
-
-
-            imob = Image.open('picture.jpg')
-            w,h = imob.size
-            newim = Image.new(imob.mode, imob.size)
-            for _ in [(x,y) for x in range(w) for y in range(h)]:
-
-
-                    #THIS IS WHAT I WANT TO DISPLAY IN GUI!!!!!
-                    #AS IT RUNS SO IT COUNTS DOWN
-                    print(w - _[0]) #how long this going to take?
-                    output_label.config(text="working on {}".format(w - _[0]))
-                    output_label.update() # push the change to the screen
-
-
-                    p = imob.getpixel(_)
-
-                    pnew=(l_val[0]*p[0]+l_val[1]*p[1]+l_val[2]*p[2]+\
-                           a_val[0],\
-                          l_val[3]*p[0]+l_val[4]*p[1]+l_val[5]*p[2]+\
-                           a_val[1],\
-                          l_val[6]*p[0]+l_val[7]*p[1]+l_val[8]*p[2]+\
-                           a_val[2])
-
-                    pnew=tuple(map(lambda x: int(x), pnew))
-                    newim.putpixel(_, pnew) #alternative
-            newim.save('here.jpg')
-            newim.close()
-
-        def count_label(newpic):
-
-            new = Image.open('here.jpg').save('here.gif', 'gif')
-            newimg = tk.PhotoImage(file='here.gif')
-            newpic.config(image=newimg)
-            newpic.image = newimg
-
-            newpic.after(1000, count_label, newpic)
-
-
-        newpic = tk.Label(master)
-        newpic.grid(row=0, column=1)
-
-        count_label(newpic)
-
-root =  tk.Tk()
-Window(root)
-root.mainloop()
+if __name__ == '__main__':
+    main()
