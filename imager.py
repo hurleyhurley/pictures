@@ -3,6 +3,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
+import time
 
 def all_jpg_to_gif():
     for filename in os.listdir('.'):
@@ -80,18 +81,21 @@ class Window(tk.Frame):
 
         w,h = self.oldimg.size
         newim = Image.new(self.oldimg.mode, self.oldimg.size)
-        for x in range(w):
-            self.output_label.config(text="working on {}".format(w - x))
-            self.output_label.update() # push the change to the screen
-            for y in range(h):
-                p = self.oldimg.getpixel((x,y))
 
-                pnew=(l_val[0]*p[0]+l_val[1]*p[1]+l_val[2]*p[2]+a_val[0],
-                      l_val[3]*p[0]+l_val[4]*p[1]+l_val[5]*p[2]+a_val[1],
-                      l_val[6]*p[0]+l_val[7]*p[1]+l_val[8]*p[2]+a_val[2])
+        new_data = []
+        for idx, (red, green, blue) in enumerate(self.oldimg.getdata()):
+            #if idx % h == 0:
+            #    self.output_label.config(text="working on row {}".format(idx // h))
+            #    self.output_label.update() # push the change to the screen
 
-                pnew=tuple(map(int, pnew))
-                newim.putpixel((x,y), pnew) #alternative
+            pnew=(l_val[0]*red+l_val[1]*green+l_val[2]*blue+a_val[0],
+                  l_val[3]*red+l_val[4]*green+l_val[5]*blue+a_val[1],
+                  l_val[6]*red+l_val[7]*green+l_val[8]*blue+a_val[2])
+
+            pnew=tuple(map(int, pnew))
+            new_data.append(pnew)
+        newim.putdata(new_data)
+
         newim.save('here.jpg')
         self.update_output(newim)
 
